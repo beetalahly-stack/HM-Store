@@ -1,0 +1,26 @@
+HM STORE — RUN FIRST
+
+1) Open this folder in VS Code.
+2) Edit .env and set:
+   DATABASE_URL="YOUR_REAL_NEON_CONNECTION_STRING"
+   ADMIN_PASSWORD="YOUR_ADMIN_PASSWORD"
+
+3) Install:
+   npm install
+
+4) Sync the database schema:
+   npm run db:push
+
+5) Start:
+   npm run dev
+
+6) Open:
+   http://localhost:3000
+
+7) Admin:
+   http://localhost:3000/admin
+
+8) Gallery check:
+   Open a product that has multiple images. Use arrows, dots and thumbnails. The gallery now renders one image at a time instead of translating an overflowing track.
+
+Do not paste DATABASE_URL into chat or commit it to Git.
