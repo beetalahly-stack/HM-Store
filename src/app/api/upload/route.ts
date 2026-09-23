@@ -1,32 +1,46 @@
+import { put } from "@vercel/blob";
 import { NextResponse } from "next/server";
-import { mkdir, writeFile } from "fs/promises";
-import path from "path";
-import { randomUUID } from "crypto";
-import { isAdminAuthenticated } from "@/lib/admin-auth";
 
-const MAX_BYTES = 5 * 1024 * 1024;
-const ALLOWED = new Map([["image/jpeg", ".jpg"], ["image/png", ".png"], ["image/webp", ".webp"], ["image/gif", ".gif"]]);
-
-export async function POST(req: Request) {
-  if (!(await isAdminAuthenticated())) return NextResponse.json({ ok: false, error: "غير مصرح" }, { status: 401 });
+export async function POST(request: Request) {
   try {
-    const data = await req.formData();
-    const file = data.get("file");
-    if (!(file instanceof File)) return NextResponse.json({ ok: false, error: "لم يتم اختيار صورة" }, { status: 400 });
-    const ext = ALLOWED.get(file.type);
-    if (!ext) return NextResponse.json({ ok: false, error: "صيغة الصورة غير مدعومة" }, { status: 400 });
-    if (file.size <= 0 || file.size > MAX_BYTES) return NextResponse.json({ ok: false, error: "حجم الصورة يجب ألا يتجاوز 5 ميجابايت" }, { status: 400 });
+    const formData = await request.formData();
+    const file = formData.get("file");
 
-    const uploadDir = path.join(process.cwd(), "public", "uploads");
-    await mkdir(uploadDir, { recursive: true });
-    const filename = `${Date.now()}-${randomUUID()}${ext}`;
-    const filePath = path.join(uploadDir, filename);
-    const buffer = Buffer.from(await file.arrayBuffer());
-    await writeFile(filePath, buffer);
+    if (!(file instanceof File)) {
+      return NextResponse.json(
+        { ok: false, error: "لم يتم اختيار ملف" },
+        { status: 400 }
+      );
+    }
 
-    return NextResponse.json({ ok: true, url: `/uploads/${filename}` });
+    if (!file.type.startsWith("image/")) {
+      return NextResponse.json(
+        { ok: false, error: "الملف يجب أن يكون صورة" },
+        { status: 400 }
+      );
+    }
+
+    const extension = file.name.split(".").pop() || "jpg";
+    const filename = `products/${Date.now()}-${crypto.randomUUID()}.${extension}`;
+
+    const blob = await put(filename, file, {
+      access: "public",
+      addRandomSuffix: false,
+    });
+
+    return NextResponse.json({
+      ok: true,
+      url: blob.url,
+    });
   } catch (error) {
-    console.error("[upload] error", error);
-    return NextResponse.json({ ok: false, error: "فشل في رفع الصورة" }, { status: 500 });
+    console.error("Upload error:", error);
+
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "فشل في رفع الصورة",
+      },
+      { status: 500 }
+    );
   }
 }
