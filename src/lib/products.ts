@@ -365,4 +365,4 @@ export const getProductById = (id: number) =>
 export const getRelatedProducts = (p: Product, limit = 4) =>
   products.filter((x) => x.id !== p.id && x.category === p.category).slice(0, limit);
 
-export const HERO_IMAGE = IMG.hero;
+export const HERO_IMAGE = "/hero.jpg";
