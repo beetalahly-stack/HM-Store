@@ -29,6 +29,31 @@ function ProductModal({ product, onSave, onClose }: { product?: Product; onSave:
   } : emptyForm);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [colorName, setColorName] = useState("");
+  const [colorHex, setColorHex] = useState("#000000");
+
+  const colorEntries = form.colors
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [name, hex = "#000000"] = line.split(",");
+      return { name: name.trim(), hex: hex.trim() };
+    })
+    .filter((color) => color.name);
+
+  function addColor() {
+    const name = colorName.trim();
+    if (!name) return alert("اكتب اسم اللون أولًا");
+    const next = [...colorEntries, { name, hex: colorHex }];
+    set("colors", next.map((color) => `${color.name},${color.hex}`).join("\n"));
+    setColorName("");
+  }
+
+  function removeColor(index: number) {
+    const next = colorEntries.filter((_, i) => i !== index);
+    set("colors", next.map((color) => `${color.name},${color.hex}`).join("\n"));
+  }
 
   const set = (key: keyof ProductForm, value: string) => setForm((prev) => ({ ...prev, [key]: value }));
 
@@ -72,7 +97,53 @@ function ProductModal({ product, onSave, onClose }: { product?: Product; onSave:
           <Field label="الفئة"><select className="admin-input" value={form.category} onChange={(e) => set("category", e.target.value)}>{CATEGORIES.filter((x) => x !== "الكل").map((x) => <option key={x}>{x}</option>)}</select></Field>
           <Field label="صور المنتج"><textarea className="admin-input" rows={3} value={form.images} onChange={(e) => set("images", e.target.value)} placeholder="رابط صورة في كل سطر" /><label className="inline-flex mt-2 cursor-pointer btn-outline !py-2 !px-4 text-xs">{uploading ? "جاري الرفع..." : "📷 رفع صورة من الجهاز"}<input type="file" accept="image/png,image/jpeg,image/webp,image/gif" className="hidden" disabled={uploading} onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadImage(f); e.currentTarget.value = ""; }} /></label></Field>
           <div className="grid grid-cols-2 gap-4"><Field label="المخزون"><input className="admin-input" type="number" min="0" value={form.stock} onChange={(e) => set("stock", e.target.value)} /></Field><Field label="الشارة"><select className="admin-input" value={form.badge} onChange={(e) => set("badge", e.target.value)}><option value="">بدون</option><option value="NEW">NEW</option><option value="HOT">HOT</option><option value="LIMITED">LIMITED</option></select></Field></div>
-          <Field label="الألوان — اسم,#HEX"><textarea className="admin-input" rows={3} value={form.colors} onChange={(e) => set("colors", e.target.value)} /></Field>
+          <Field label="الألوان">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3 space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3">
+                <input
+                  className="admin-input"
+                  value={colorName}
+                  onChange={(e) => setColorName(e.target.value)}
+                  placeholder="اسم اللون، مثل: أسود"
+                />
+                <div className="flex items-center gap-3">
+                  <input
+                    aria-label="اختيار اللون"
+                    type="color"
+                    value={colorHex}
+                    onChange={(e) => setColorHex(e.target.value)}
+                    className="h-11 w-14 cursor-pointer rounded-lg border border-white/15 bg-transparent p-1"
+                  />
+                  <span className="text-xs text-white/60 font-mono">{colorHex}</span>
+                </div>
+              </div>
+              <button type="button" onClick={addColor} className="btn-outline w-full !py-2.5 text-sm">
+                ＋ إضافة اللون
+              </button>
+              {colorEntries.length > 0 ? (
+                <div className="space-y-2">
+                  {colorEntries.map((color, index) => (
+                    <div key={`${color.name}-${index}`} className="flex items-center gap-3 rounded-xl bg-white/[0.04] border border-white/5 px-3 py-2">
+                      <span className="h-6 w-6 shrink-0 rounded-full border border-white/20" style={{ backgroundColor: color.hex }} />
+                      <span className="text-sm flex-1">{color.name}</span>
+                      <span className="text-xs text-white/50 font-mono">{color.hex}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeColor(index)}
+                        className="text-red-400 hover:text-red-300 px-2 py-1"
+                        aria-label={`حذف اللون ${color.name}`}
+                        title="حذف اللون"
+                      >
+                        🗑
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-white/40">لم تتم إضافة ألوان بعد.</p>
+              )}
+            </div>
+          </Field>
           <Field label="المقاسات — بفواصل"><input className="admin-input" value={form.sizes} onChange={(e) => set("sizes", e.target.value)} /></Field>
           <Field label="وصف المنتج"><textarea className="admin-input" rows={4} value={form.description} onChange={(e) => set("description", e.target.value)} /></Field>
         </div>
